@@ -1,20 +1,21 @@
 [![Discord](https://img.shields.io/badge/Discord-Join%20Server-7289da?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/unPZxXAtfb)
 
-# 🎣 GPO Autofish v3.0 - GUIDE
+# 🎣 GPO Autofish v4.0 - GUIDE
 
 **💬 Join our Discord server:** https://discord.gg/unPZxXAtfb
 
-## 🆕 What's New in v3.0?
+## 🆕 What's New in v4.0?
 
-**Major UI Overhaul - Modern & User-Friendly:**
+**Complete Rewrite - Native, Fast & Tiny:**
 
-- ✨ **Complete Redesign** - Brand new tabbed interface for better organization
-- 📊 **Dashboard Overview** - Real-time stats, activity feed, and quick controls
-- 🎯 **Step-by-Step Setup** - Guided setup wizard makes configuration easy
-- ⚡ **Feature Cards** - All features organized in clean, easy-to-use cards
-- 🎨 **Enhanced Themes** - Improved styling with better visual hierarchy
-- 📱 **Better Navigation** - Tabs instead of collapsible sections
-- 🚀 **Quick Start** - Get fishing in minutes with the new interface
+- ⚡ **Native Windows app** - Rewritten in Rust with Tauri. One installer under 10 MB, no Python
+- 🧠 **Built-in text recognition** - Uses the OCR that ships with Windows 10/11. No 1 GB download
+- 📌 **HUD pill + tray icon** - A small always-on-top pill sits on the Roblox window. No big window in the way
+- 📐 **Resolution independent** - Every area and click point is saved relative to the Roblox window
+- 🖱️ **On-screen editor** - Draw the bar and drop message areas directly over the game. Bar area can be auto-detected
+- 👀 **Live preview** - Thumbnail and match score for the bar area so you know it works before you start
+- 🧭 **Step-by-step guide** - The Setup page walks you from an empty hotbar to your first catch
+- 🔄 **Imports v3 settings** - Loads your old `default_settings.json`
 
 ## What is this?
 
@@ -27,218 +28,174 @@ This is the **open-source version** of the GPO fishing macro that everyone uses.
 
 The original closed-source macro is sketchy and often flagged by antivirus software because you can't verify what it's actually doing. This open-source version solves that problem.
 
-**🛡️ Concerned about safety? Read [IS_IT_A_VIRUS.md](IS_IT_A_VIRUS.md) for more information.**
+**🛡️ Concerned about safety?** The whole source is here. Build it yourself with the steps below and compare. Antivirus heuristics dislike programs that send mouse input and read the screen; that is what a fishing macro does.
 
 ---
 
 **Features:**
 
-- **🎣 Fishing System** - Automatic fish detection and tracking with PD controller
+- **🎣 Fishing System** - Automatic fish detection and tracking with a physics-based controller
 - **🍎 Devil Fruit Detection** - OCR-powered detection of devil fruit drops with keyword matching
 - **🌟 Fruit Spawn Alerts** - Detects and webhooks when devil fruits spawn with exact fruit name recognition
-- **📦 Auto Fruit Storage** - Automatically stores devil fruits in inventory when detected
-- **🔔 Discord Webhook Alerts** - Notifications for devil fruit catches and world spawns
-- **🛒 Auto-Purchase** - Configurable bait purchasing
-- **🎯 Auto Setup** - Zoom control and layout switching
-- **🖥️ Modern UI** - Clean interface with collapsible sections
-- **⚡ One-click installation** with `install.bat`
-- **📊 Logging** - Dev mode for debugging
-- **⌨️ Global hotkey support** (F1/F2/F3/F4)
+- **📦 Auto Fruit Storage** - Automatically stores devil fruits in your fruit slots when detected
+- **🔔 Discord Webhook Alerts** - Notifications for devil fruit catches, world spawns, purchases and recoveries
+- **🛒 Auto-Purchase** - Configurable bait purchasing every X fish
+- **🪱 Auto Bait** - Re-selects your bait before every cast
+- **🎯 Auto Setup** - Zoom control and cast positioning
+- **🛟 Watchdog** - Restarts a stuck loop on its own
+- **💾 Presets** - Save and load full settings snapshots
+- **⬆️ Auto Update** - Updates itself from GitHub Releases
+- **⌨️ Global hotkey support** (F1/F2/F3/F4, all rebindable)
 
 ## 🚀 Key Features
 
 ### 🍎 Devil Fruit Detection
 
-- **OCR Detection**: Detects devil fruit drops using text recognition
+- **OCR Detection**: Detects devil fruit drops using Windows text recognition
 - **Spawn Detection**: Detects when devil fruits spawn in the world (all 33 GPO fruits)
-- **Fuzzy Matching**: Handles OCR errors with 70% similarity threshold
-- **Auto Storage**: Automatically stores caught fruits
+- **Fuzzy Matching**: Handles OCR errors with a similarity threshold
+- **Auto Storage**: Automatically stores caught fruits into two hotbar slots and re-equips the rod
 - **Webhook Alerts**: Discord notifications for catches and spawns
 
 ### 🎯 Auto Setup
 
 - **Zoom Control**: Automatically zooms out/in for fishing
-- **Layout Switching**: Switches between fishing bar and drop detection
-- **Mouse Positioning**: Moves to casting position
+- **Cast Positioning**: Moves to the casting position (auto center or a custom point)
 - **Menu Clearing**: Right-clicks to clear menus
 
 ### 🛒 Auto-Purchase
 
 - **Configurable Intervals**: Buy bait every X fish caught
-- **Point System**: Set 4 custom points for purchase sequence
+- **Point System**: Holds the shop key next to the bait barrel, then clicks Confirm, Quantity and an optional Cancel point
 - **Auto-save**: Settings persist between sessions
 
 ### ⚡ Performance
 
-- **Silent Mode**: Use `run.bat` for background operation
-- **Dev Mode**: Use `run_dev.bat` for debugging with console output
-- **Logging**: Level-based logging system
-- **Modern UI**: Clean interface
+- **Fast Detection**: Bar tracking runs in microseconds, not Python pixel loops
+- **Tiny Footprint**: One small installer, no runtime to install
+- **Logging**: Live activity feed in the Dashboard plus a log file in the data folder
 
 ## Installation
 
-### ⚠️ Python Version Requirement
-
-**IMPORTANT**: This application requires **Python 3.12 or 3.13**.
-
-- ❌ **Python 3.14+ is NOT supported** due to compatibility issues with required packages (EasyOCR, PyTorch, etc.)
-- ✅ **Recommended**: Python 3.13.0 (most stable)
-- ✅ **Alternative**: Python 3.12.7
-
-**Download Links:**
-
-- [Python 3.13.0](https://www.python.org/ftp/python/3.13.0/python-3.13.0-amd64.exe) (Recommended)
-- [Python 3.12.7](https://www.python.org/ftp/python/3.12.7/python-3.12.7-amd64.exe) (Alternative)
-
 ### 🚀 Easy Installation (Recommended)
 
-1. **Install Python 3.12 or 3.13** (see links above) - Make sure to check "Add Python to PATH"
-2. **Download the repository** as ZIP and extract it
-3. **Double-click `install.bat`** - This will:
-   - Check if Python is installed and verify version compatibility
-   - Install all required packages automatically
-   - Set everything up for you
-4. **Run the application:**
-   - **Standard mode:** Double-click `run.bat` (silent, no console)
-   - **Dev mode:** Double-click `run_dev.bat` (with console for debugging)
+1. **Download** the latest `GPO Autofish_x.y.z_x64-setup.exe` from Releases
+2. **Run it** - No admin needed
+3. **Launch GPO Autofish** - The panel opens; the HUD appears once Roblox is running
 
-### 🔧 Manual Installation
+Requires Windows 10 1809 or newer. Windows OCR needs an English language pack, which is present on nearly every install. The Setup page tells you if it is missing.
 
-1. **Install Python 3.12 or 3.13** from the links above (check "Add to PATH")
-   - ⚠️ **Do NOT use Python 3.14+** - it will cause installation failures
-2. **Clone or download this repository**
-   ```bash
-   git clone https://github.com/arielldev/gpo-autofish.git
-   cd gpo-autofish
-   ```
-3. **Install packages**
-   ```bash
-   pip install -r requirements.txt
-   ```
-4. **Run the application**
-   ```bash
-   python src/main.py
-   ```
+### 🔧 Build the installer yourself
+
+Requirements: [Node.js 20+](https://nodejs.org) and [Rust](https://rustup.rs). WebView2 is already on Windows 11.
+
+1. **Download the repository** as ZIP and extract it, or `git clone https://github.com/arielldev/gpo-fishing.git`
+2. **Double-click `MakeItExe.bat`** - It installs packages, builds the app and opens the folder with the installer
+3. **Run the installer** it produced, same as the one from Releases
+
+Auto-update checks GitHub Releases on launch and can be turned off in Settings.
 
 ## 🎮 Quick Start Guide
 
+### Before you start
+
+- **Rod in slot 1**: Put your fishing rod in the first hotbar slot (key `1`)
+- **Empty inventory**: Clear everything else out of your hotbar so fruits and bait land where the bot expects them
+
 ### First Time Setup
 
-1. **Install**: Run `install.bat` to set everything up automatically
-2. **Launch**: Use `run.bat` (silent mode) or `run_dev.bat` (with console for debugging)
-3. **Configure Layouts**: Position overlays over fishing bar and drop detection areas
-4. **Set Points**: Configure fruit storage points and auto-purchase coordinates
-5. **Enable Features**: Turn on devil fruit storage, webhooks, and auto-purchase as needed
+1. **Launch**: Open Roblox, join GPO, then open GPO Autofish. The Setup page shows the window as detected
+2. **Bar area**: Cast once by hand. When the blue bar shows, open Setup › Fishing bar area and press **Auto-detect**. The thumbnail turns green when matched
+3. **Drop message area**: Draw it over the popup at the top middle of the screen where "New Item <Fruit>" and "A Fruit has spawned at Place" appear. Press **Read now** to confirm the OCR reads it
+4. **Rod key**: Slot `1`
+5. **Enable Features**: Turn on auto bait, auto buy, fruit storage and webhooks in the Features page. Each one lists its steps, keys and points. Each **Pick** opens a crosshair over Roblox
+6. **Fish**: Press **F1** or the HUD play button
 
 ### Devil Fruit Storage Setup
 
-1. **Enable Fruit Storage**: Check the "Enable Fruit Storage" option
-2. **Set Fruit Key**: Choose which inventory slot (1-9) to store fruits
-3. **Set Fruit Point**: Click to set where to click for fruit selection
-4. **Set Rod Key**: Choose which slot (1-9) contains your fishing rod
-5. **Set Bait Point**: Click to set where to click for bait selection
+1. **Enable Store fruits** in the Features page
+2. **Set Fruit Keys**: Choose the two hotbar slots the fruit is moved through
+3. **Set Fruit Point**: Pick the Store button that appears after switching to a fruit slot
+4. **Set Rod Key**: Slot `1` holds your fishing rod (Setup › Rod key)
+5. **Set Bait Point**: Pick the top bait in the rod menu (Features › Auto bait)
+
+### Auto-Purchase Setup
+
+1. **Stand next to the bait barrel** on the dock before starting
+2. **Enable Auto buy bait** in the Features page and follow the numbered steps
+3. **Shop key**: The bot holds it until the barrel's shop dialog opens
+4. **Confirm / Quantity / Cancel**: Pick each button in the shop. Cancel is optional
+5. **Amount and interval**: How much bait to type and how many fish between purchases
 
 ### Discord Webhook Setup
 
 1. **Create Webhook**: In your Discord server → Channel Settings → Integrations → Webhooks
-2. **Copy URL**: Paste the webhook URL in the bot settings
+2. **Copy URL**: Paste the webhook URL in Features › Discord and press **Test**
 3. **Configure Alerts**:
    - 🍎 Devil Fruit Catch Alerts - Notifications when you catch a fruit while fishing
-   - 🌟 Devil Fruit Spawn Alerts - Notifications when fruits spawn in the world (with exact fruit name)
+   - 🌟 Devil Fruit Spawn Alerts - Notifications when fruits spawn in the world (with exact fruit name). Turning this on makes the bot read the drop message area between casts
    - 🐟 Fish Progress Updates - Regular progress reports
    - 🛒 Auto Purchase Alerts - Bait purchase confirmations
+   - 🛟 Recovery Alerts - When the watchdog restarts or gives up
 4. **Set Interval**: Choose how often to send fish progress updates
 
 ### Hotkeys
 
-- **F1**: Start/Stop fishing loop
-- **F2**: Toggle layout overlay
+- **F1**: Start/Pause fishing loop
+- **F2**: Edit areas on screen
 - **F3**: Emergency stop and exit
-- **F4**: Minimize to system tray
-- **Note**: All hotkeys work without admin privileges
+- **F4**: Hide/show the HUD
+- **Note**: All hotkeys work without admin privileges and can be rebound in Settings
 
 ### Performance Tips
 
-- **Long Sessions**: Use `run.bat` for extended fishing sessions (runs silently in background)
-- **Debugging**: Use `run_dev.bat` when you need to see console output or troubleshoot issues
-- **Webhook Monitoring**: Use Discord alerts for fruit spawns and catches instead of watching console
-- **OCR Optimization**: Ensure good lighting and clear text for better fruit detection
+- **Long Sessions**: Close the panel; the HUD and tray icon keep running
+- **Webhook Monitoring**: Use Discord alerts for fruit spawns and catches instead of watching the screen
+- **OCR Optimization**: Make the drop message area cover the whole popup for better fruit detection
 - **Spawn Detection**: The bot detects all 33 GPO devil fruits automatically using fuzzy matching
 
 ---
 
 ## 🔧 Troubleshooting
 
-### Installation Issues
-
-- **"Python not found"**: Download Python 3.12 or 3.13 from the links above and check "Add to PATH"
-- **"Python 3.14+ not supported"**: Uninstall Python 3.14+ and install Python 3.13 or 3.12 instead
-- **"pip not recognized"**: Reinstall Python with "Add to PATH" checked
-- **Permission errors**: Right-click `install.bat` → "Run as administrator"
-- **Package installation failures**: Ensure you're using Python 3.12 or 3.13, not 3.14+
-
 ### Runtime Issues
 
-- **Hotkeys not working**: Try running with administrator privileges
-- **Fish detection failing**: Adjust overlay position over the blue fishing bar
-- **Devil fruit not detected**: Check OCR setup and drop area positioning
-- **Fruit spawns not detected**: Ensure drop layout covers the spawn message area
-- **Auto-purchase failing**: Verify all 4 purchase points are set correctly
-- **High CPU usage**: Use `run.bat` for silent mode operation
+- **HUD not showing**: It only appears while Roblox is running and not minimized. Press F4 if you hid it
+- **Hotkeys not working**: Another app may own the key. Rebind in Settings › Hotkeys
+- **Fish detection failing**: Open Setup › Fishing bar area. If the match score is low, raise Settings › Color tolerance or redraw the area tighter around the bar
+- **Devil fruit not detected**: Setup › Drop message area › Read now shows exactly what the OCR sees
+- **Fruit spawns not detected**: Ensure the drop message area covers the spawn popup
+- **Auto-purchase failing**: Verify the Confirm and Quantity points are set and you are standing next to the bait barrel
+- **Logs**: Settings › Data folder › `logs/`
 
 ### Devil Fruit Issues
 
-- **Fruits not being stored**: Check if OCR detected the fruit in console logs
-- **Storage sequence running without fruit**: Ensure OCR is working properly
-- **Wrong inventory slot**: Verify fruit key setting matches your setup
-- **Rod not switching back**: Check rod key and bait point configuration
-
-### Performance Issues
-
-- **Long sessions lagging**: Use `run.bat` for silent background operation
-- **Need console output**: Use `run_dev.bat` for debugging mode with full logging
-- **Memory usage**: Standard mode (`run.bat`) automatically reduces memory footprint
-- **OCR slow**: Install EasyOCR properly for faster text recognition
-- **Spawn detection**: Works automatically for all 33 GPO fruits with fuzzy name matching
+- **Fruits not being stored**: Check if OCR detected the fruit in the Dashboard activity feed
+- **Storage sequence running without fruit**: Ensure the drop message area only covers the popup
+- **Wrong inventory slot**: Verify the fruit keys match your hotbar
+- **Rod not switching back**: Check the rod key (slot `1`) and bait point configuration
 
 ---
 
 ## 📁 Project Structure
 
-The codebase has been refactored into a clean, modular structure:
-
 ```
+src-tauri/src/
+├── core/platform/       # OS traits (window, capture, input, OCR) + Windows implementations
+├── core/vision.rs       # Bar / fish / marker detection
+├── core/fruit.rs        # Drop and spawn text matching
+├── core/controller.rs   # Reel controller
+├── bot/                 # State machine, actions, watchdog, session stats
+├── config.rs            # Settings, presets, v3 import
+├── webhook.rs           # Discord embeds
+└── commands.rs          # Tauri command surface
 src/
-├── main.py              # Application entry poi
-├── gui.py               # Main GUI and UI components
-├── fishing.py           # Fishing bot logic and devil fruit detection
-├── overlay.py           # Overlay window management
-├── layout_manager.py    # Layout switching and area management
-├── zoom_controller.py   # Auto zoom control system
-├── ocr_manager.py       # OCR text recognition for devil fruits
-├── webhook.py           # Discord webhook integration
-├── updater.py           # Auto-update system
-├── settings.py          # Settings management
-├── themes.py            # Theme system for UI customization
-└── utils.py             # Utility classes
+├── windows/             # Hud, Panel, Overlay
+├── pages/               # Dashboard, Setup, Features, Settings
+└── components/          # Shared UI pieces
 ```
 
-This modular structure makes the code:
-
-- ✅ Easier to understand and maintain
-- ✅ Better organized by functionality
-- ✅ Simpler to extend with new features
-- ✅ More testable and debuggable
-
-### Modern UI with CustomTkinter
-
-The application now uses **CustomTkinter** for a modern, professional look:
-
-- Clean, modern interface with smooth animations
-- Dark/Light theme support
-- Better visual hierarchy and readability
-- Professional-looking buttons and controls
-- Improved user experience
+Everything OS-specific sits behind traits in `src-tauri/src/core/platform/mod.rs`, so other capture or OCR backends can be added without touching the bot logic. Fruit names and drop phrases live in settings under `lexicon`, so a game update does not need a rebuild.
 
 ## 🤝 Contributing
 
@@ -250,3 +207,7 @@ This is an open-source project! Feel free to:
 - Join our Discord community
 
 **💬 Discord:** https://discord.gg/unPZxXAtfb
+
+## License
+
+MIT. See [LICENSE](LICENSE).
