@@ -109,7 +109,7 @@ export default function SettingsPage() {
         </Row>
         <Row
           title="Record reel logs"
-          sub="Every reel writes logs/traces/reel-*.json (per-frame data, metrics) plus every captured frame as PNG. index.json summarises all reels."
+          sub="Every reel writes a small logs/traces/reel-*.json with per-frame numbers and metrics. No screenshots."
           right={<Toggle value={s.fishing.trace} onChange={(v) => update((x) => void (x.fishing.trace = v))} />}
         />
         <Row title="Bite detection" sub="Frames the bar must be seen before reeling starts, and frames it must vanish before the catch counts." open={open === "bite"} onToggle={() => toggle("bite")}>

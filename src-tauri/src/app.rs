@@ -73,6 +73,10 @@ pub fn setup(app: &AppHandle, st: &AppState) -> Result<(), Box<dyn std::error::E
         tracing::warn!("hotkeys: {e}");
     }
     windows::init(app);
+    let freed = st.store.purge_trace_frames();
+    if freed > 0 {
+        tracing::info!("Removed {} MB of old reel frames", freed / 1_000_000);
+    }
     tracing::info!("GPO Autofish started");
     Ok(())
 }

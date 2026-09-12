@@ -63,7 +63,7 @@ export type Reading = {
 };
 export type Confidence = { bar: number; fish: number; marker: number; score: number };
 
-export type DropInfo = { text: string; is_legendary: boolean; name: string | null };
+export type DropInfo = { text: string; is_legendary: boolean };
 export type SpawnInfo = { text: string; name: string | null; location: string | null };
 
 export type Settings = {
@@ -125,6 +125,7 @@ export type Settings = {
     spawn: boolean;
     purchase: boolean;
     recovery: boolean;
+    legendary_only: boolean;
   };
   hotkeys: { toggle: string; overlay: string; quit: string; hide_hud: string };
   ui: { theme: string; hud_offset: RelPoint; hud_visible: boolean; panel_offset: RelPoint; panel_size: [number, number]; log_level: string };

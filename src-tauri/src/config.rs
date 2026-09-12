@@ -8,7 +8,7 @@ use crate::core::fruit::Lexicon;
 use crate::core::types::{PxRect, RelPoint, RelRect};
 use crate::core::vision::Palette;
 
-pub const SETTINGS_VERSION: u32 = 8;
+pub const SETTINGS_VERSION: u32 = 9;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
@@ -92,7 +92,7 @@ impl Default for Fishing {
             cast_hold_ms: 1000,
             scan_hz: 15,
             track_hz: 60,
-            trace: true,
+            trace: false,
         }
     }
 }
@@ -192,6 +192,7 @@ pub struct Webhook {
     pub spawn: bool,
     pub purchase: bool,
     pub recovery: bool,
+    pub legendary_only: bool,
 }
 
 impl Default for Webhook {
@@ -205,6 +206,7 @@ impl Default for Webhook {
             spawn: true,
             purchase: true,
             recovery: true,
+            legendary_only: false,
         }
     }
 }
@@ -340,6 +342,22 @@ impl Store {
         self.dir.join("logs")
     }
 
+    pub fn purge_trace_frames(&self) -> u64 {
+        let traces = self.logs_dir().join("traces");
+        let Ok(entries) = fs::read_dir(&traces) else { return 0 };
+        let mut freed = 0u64;
+        for e in entries.flatten() {
+            let path = e.path();
+            if path.is_dir() {
+                if let Ok(files) = fs::read_dir(&path) {
+                    freed += files.flatten().filter_map(|f| f.metadata().ok()).map(|m| m.len()).sum::<u64>();
+                }
+                let _ = fs::remove_dir_all(&path);
+            }
+        }
+        freed
+    }
+
     fn settings_path(&self) -> PathBuf {
         self.dir.join("settings.json")
     }
@@ -373,15 +391,15 @@ impl Store {
             Err(_) => Settings::default(),
         };
         if settings.version < SETTINGS_VERSION {
-            if settings.version < 5 {
-                settings.fishing.trace = true;
-            }
             if settings.version < 6 && settings.fishing.control.physics.calibrated_at == 0 {
                 settings.fishing.control = crate::core::controller::ControlGains::default();
             }
             if settings.version < 8 {
                 let old = settings.points.purchase;
                 settings.points.purchase = [old[2], old[1], None];
+            }
+            if settings.version < 9 {
+                settings.fishing.trace = false;
             }
             settings.version = SETTINGS_VERSION;
             let _ = self.save(&settings);

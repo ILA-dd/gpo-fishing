@@ -88,23 +88,19 @@ impl WebhookQueue {
     }
 
     pub fn fruit_drop(&self, d: &DropInfo) {
-        let (title, color) = if d.is_legendary {
-            ("Legendary devil fruit caught", COLOR_GOLD)
+        let (title, desc, color) = if d.is_legendary {
+            ("Legendary devil fruit dropped", "Pity reset to 0. You got a **legendary** devil fruit!", COLOR_GOLD)
         } else {
-            ("Devil fruit caught", COLOR_PURPLE)
+            ("Devil fruit dropped", "You got a devil fruit.", COLOR_PURPLE)
         };
-        let desc = match &d.name {
-            Some(n) => format!("You fished up **{n}**."),
-            None => format!("You fished up a devil fruit. The name could not be read.\n`{}`", d.text),
-        };
-        self.send(embed(title, &desc, color, vec![]));
+        self.send(embed(title, desc, color, vec![]));
     }
 
     pub fn spawn(&self, info: &SpawnInfo) {
         let at = info.location.as_deref().map(|l| format!(" at **{l}**")).unwrap_or_default();
         let (title, desc, color) = match &info.name {
             Some(n) => ("Devil fruit spawned", format!("**{n}** has spawned{at}."), COLOR_PURPLE),
-            None => ("Devil fruit spawned", format!("A devil fruit has spawned{at}. The name could not be read.\n`{}`", info.text), COLOR_BLUE),
+            None => ("Devil fruit spawned", format!("A devil fruit has spawned{at}!"), COLOR_BLUE),
         };
         self.send(embed(title, &desc, color, vec![]));
     }

@@ -56,7 +56,6 @@ impl Default for Lexicon {
 pub struct DropInfo {
     pub text: String,
     pub is_legendary: bool,
-    pub name: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -153,9 +152,12 @@ pub fn detect_drop(lex: &Lexicon, raw: &str) -> Option<DropInfo> {
     let words: Vec<&str> = text.split_whitespace().collect();
     let thr = lex.fuzzy_threshold.min(0.8);
 
+    if mentions_spawn(lex, &words, thr) {
+        return None;
+    }
     if let Some(i) = word_at(&words, "item", thr) {
-        let name = first_fruit(lex, words[i + 1..].iter().copied()).or_else(|| first_fruit(lex, words.iter().copied()))?;
-        return Some(DropInfo { is_legendary: is_legendary(&text), name: Some(name), text });
+        first_fruit(lex, words[i + 1..].iter().copied()).or_else(|| first_fruit(lex, words.iter().copied()))?;
+        return Some(DropInfo { is_legendary: is_legendary(&words), text });
     }
 
     let by_phrase = lex.drop_phrases.iter().any(|p| text.contains(p.as_str()));
@@ -163,18 +165,29 @@ pub fn detect_drop(lex: &Lexicon, raw: &str) -> Option<DropInfo> {
     if !(by_phrase || by_keywords) {
         return None;
     }
-    let name = first_fruit(lex, words.iter().copied());
-    Some(DropInfo { is_legendary: is_legendary(&text), name, text })
+    Some(DropInfo { is_legendary: is_legendary(&words), text })
 }
 
-fn is_legendary(text: &str) -> bool {
-    if text.contains("legendary") {
-        return true;
+fn mentions_spawn(lex: &Lexicon, words: &[&str], thr: f64) -> bool {
+    lex.spawn_keywords.iter().any(|k| words.iter().any(|w| similar(w, k, thr)))
+}
+
+fn mentions_pity(words: &[&str]) -> bool {
+    words.iter().any(|w| jaro_winkler(w, "pity") >= 0.85)
+}
+
+fn is_zero(w: &str) -> bool {
+    matches!(w, "0" | "o" | "00")
+}
+
+fn is_legendary(words: &[&str]) -> bool {
+    if let Some(i) = words.iter().position(|w| jaro_winkler(w, "pity") >= 0.85) {
+        return words.get(i + 1).is_some_and(|w| is_zero(w));
     }
-    text.split_whitespace().any(|w| {
+    words.iter().any(|w| {
         let mut it = w.splitn(2, '/');
         match (it.next(), it.next()) {
-            (Some("0"), Some(rest)) => rest.parse::<u32>().is_ok_and(|n| (1..=100).contains(&n)),
+            (Some(z), Some(rest)) => is_zero(z) && rest.parse::<u32>().is_ok_and(|n| (1..=100).contains(&n)),
             _ => false,
         }
     })
@@ -209,6 +222,9 @@ pub fn detect_spawn(lex: &Lexicon, raw: &str) -> Option<SpawnInfo> {
     }
     let words: Vec<&str> = text.split_whitespace().collect();
     let thr = lex.fuzzy_threshold.min(0.8);
+    if mentions_pity(&words) {
+        return None;
+    }
 
     let has_keyword = lex.spawn_keywords.iter().any(|k| words.iter().any(|w| similar(w, k, thr)) || text.replace(' ', "").contains(k.as_str()));
     let has_i = word_at(&words, "has", 0.9);
@@ -247,28 +263,37 @@ mod tests {
     fn drop_by_phrase() {
         let d = detect_drop(&lex(), "You fished up a Devil Fruit! Check your backpack").unwrap();
         assert!(!d.is_legendary);
-        assert_eq!(d.name, None);
     }
 
     #[test]
-    fn drop_new_item_exact() {
-        for (raw, want) in [
-            ("New Item <Buddha>", "Buddha"),
-            ("New Item <Suna>", "Suna"),
-            ("New Item <Gomu>", "Gomu"),
-            ("New Item <Spring>", "Spring"),
-            ("New Item <Heal>", "Heal"),
-        ] {
-            let d = detect_drop(&lex(), raw).unwrap_or_else(|| panic!("no drop for {raw}"));
-            assert_eq!(d.name.as_deref(), Some(want), "{raw}");
+    fn drop_new_item() {
+        for raw in ["New Item <Buddha>", "New Item <Suna>", "New ltem (Buddha>", "NEW ITEM <Pteranodn>", "New Item < Sprng >"] {
+            assert!(detect_drop(&lex(), raw).is_some(), "{raw}");
         }
     }
 
     #[test]
-    fn drop_new_item_ocr_noise() {
-        assert_eq!(detect_drop(&lex(), "New ltem (Buddha>").unwrap().name.as_deref(), Some("Buddha"));
-        assert_eq!(detect_drop(&lex(), "NEW ITEM <Pteranodn>").unwrap().name.as_deref(), Some("Pteranodon"));
-        assert_eq!(detect_drop(&lex(), "New Item < Sprng >").unwrap().name.as_deref(), Some("Spring"));
+    fn drop_pity_decides_legendary() {
+        let l = lex();
+        let d = detect_drop(&l, "g eye you got a devil fruwdrop check your legendary pity 17").unwrap();
+        assert!(!d.is_legendary);
+        let d = detect_drop(&l, "you got a devil fruit drop check your backpack legendary pity 0").unwrap();
+        assert!(d.is_legendary);
+        let d = detect_drop(&l, "you got a devil fruit drop legendary pity o").unwrap();
+        assert!(d.is_legendary);
+        let d = detect_drop(&l, "you got a devil fruit drop legendary pity 10").unwrap();
+        assert!(!d.is_legendary);
+        let d = detect_drop(&l, "You got a Devil Fruit drop! Legendary Pity 3").unwrap();
+        assert!(!d.is_legendary);
+    }
+
+    #[test]
+    fn drop_and_spawn_never_cross() {
+        let l = lex();
+        assert!(detect_drop(&l, "A Devil Fruit has spawned at MARINE FORD").is_none());
+        assert!(detect_drop(&l, "A VENOM has spawned at ORANGE TOWN").is_none());
+        assert!(detect_spawn(&l, "you got a devil fruit drop check your backpack legendary pity 0").is_none());
+        assert!(detect_spawn(&l, "You got a Devil Fruit drop! Legendary Pity 17").is_none());
     }
 
     #[test]

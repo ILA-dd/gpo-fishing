@@ -261,10 +261,7 @@ fn fish_cycle(ctx: &Ctx, tracker: &mut Tracker, last_hash: &mut u64, spawn_check
                     ctx.log_debug("Bite confirmed; tracking");
                     if trace_enabled {
                         match Trace::start(&ctx.store.logs_dir(), gains) {
-                            Ok(mut t) => {
-                                t.snapshot("bite", &frame);
-                                trace = Some(t);
-                            }
+                            Ok(t) => trace = Some(t),
                             Err(e) => ctx.log_warn(&format!("trace: {e}")),
                         }
                     }
@@ -298,7 +295,6 @@ fn fish_cycle(ctx: &Ctx, tracker: &mut Tracker, last_hash: &mut u64, spawn_check
                 let tf = TrackFrame { reading: r, decision, origin_dx };
                 if let Some(t) = trace.as_mut() {
                     t.frame(&tf, grab_took, read_took);
-                    t.dump(&frame);
                 }
                 ctx.emit(BotEvent::Reading(Some(tf)));
             }
@@ -308,11 +304,6 @@ fn fish_cycle(ctx: &Ctx, tracker: &mut Tracker, last_hash: &mut u64, spawn_check
                     let bar_present = vision::has_bar(&frame, &palette);
                     if let Some(tr) = trace.as_mut() {
                         tr.blind(bar_present);
-                        if !bar_present && misses == 0 {
-                            tr.snapshot("end", &frame);
-                        } else if bar_present {
-                            tr.snapshot("blind", &frame);
-                        }
                     }
                     if bar_present {
                         misses = 0;
@@ -430,19 +421,16 @@ fn post_catch(ctx: &Ctx, first_text: &str) -> bool {
             }
         }
         if let Some(d) = drop {
-            ctx.log_info(&format!(
-                "Devil fruit caught: {}{}",
-                d.name.as_deref().unwrap_or("unknown fruit"),
-                if d.is_legendary { " (legendary)" } else { "" }
-            ));
+            let label = if d.is_legendary { "Legendary devil fruit" } else { "Devil fruit" };
+            ctx.log_info(&format!("{label} dropped"));
             {
                 let mut sess = ctx.session.lock();
                 sess.fruits += 1;
-                sess.last_fruit = Some(d.name.clone().unwrap_or_else(|| d.text.clone()));
+                sess.last_fruit = Some(label.into());
             }
             ctx.emit_stats();
             ctx.emit(BotEvent::FruitDrop(d.clone()));
-            if s.webhook.fruit_drop {
+            if s.webhook.fruit_drop && (d.is_legendary || !s.webhook.legendary_only) {
                 ctx.webhook.fruit_drop(&d);
             }
             if !actions::store_fruit(ctx) {

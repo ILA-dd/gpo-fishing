@@ -1,13 +1,11 @@
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::sync::mpsc::{channel, Sender};
 use std::time::{Duration, Instant};
 
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
 use crate::core::controller::ControlGains;
-use crate::core::types::Frame;
 use crate::events::TrackFrame;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -35,29 +33,13 @@ pub struct Trace {
     abs_err_max: f32,
     on_target: u32,
     gains: ControlGains,
-    dumper: Sender<(PathBuf, Frame)>,
-    dumped: u32,
-    last_dump: Option<Instant>,
-    snapshots: u32,
 }
-
-const DUMP_INTERVAL: Duration = Duration::from_millis(100);
 
 impl Trace {
     pub fn start(logs_dir: &Path, gains: ControlGains) -> std::io::Result<Self> {
         let dir = logs_dir.join("traces");
         fs::create_dir_all(&dir)?;
         let stem = format!("reel-{}", crate::events::now_ms());
-        let frames_dir = dir.join(&stem);
-        fs::create_dir_all(&frames_dir)?;
-        let (tx, rx) = channel::<(PathBuf, Frame)>();
-        std::thread::Builder::new()
-            .name("trace-dumper".into())
-            .spawn(move || {
-                for (path, frame) in rx {
-                    let _ = image::save_buffer(&path, &frame.rgba, frame.w as u32, frame.h as u32, image::ExtendedColorType::Rgba8);
-                }
-            })?;
         Ok(Self {
             dir,
             stem,
@@ -70,10 +52,6 @@ impl Trace {
             abs_err_max: 0.0,
             on_target: 0,
             gains,
-            dumper: tx,
-            dumped: 0,
-            last_dump: None,
-            snapshots: 0,
         })
     }
 
@@ -117,25 +95,6 @@ impl Trace {
     pub fn blind(&mut self, bar_present: bool) {
         self.blind += 1;
         self.frames.push(json!({ "t": self.t_ms(), "blind": true, "bar_present": bar_present }));
-    }
-
-    pub fn dump(&mut self, frame: &Frame) {
-        if self.dumped >= 3000 || self.last_dump.is_some_and(|t| t.elapsed() < DUMP_INTERVAL) {
-            return;
-        }
-        let path = self.dir.join(&self.stem).join(format!("{:05}.png", self.frames.len()));
-        self.dumped += 1;
-        self.last_dump = Some(Instant::now());
-        let _ = self.dumper.send((path, frame.clone()));
-    }
-
-    pub fn snapshot(&mut self, tag: &str, frame: &Frame) {
-        if self.snapshots >= 12 {
-            return;
-        }
-        self.snapshots += 1;
-        let path = self.dir.join(&self.stem).join(format!("{tag}-{:02}.png", self.snapshots));
-        let _ = self.dumper.send((path, frame.clone()));
     }
 
     pub fn finish(self, outcome: &str) -> (String, ReelMetrics) {

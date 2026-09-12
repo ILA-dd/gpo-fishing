@@ -189,6 +189,14 @@ export default function Features() {
                 </div>
               </div>
             ))}
+            {s.webhook.fruit_drop && ocrAvailable && (
+              <div className="flex items-center h-10 border-b border-line pl-4">
+                <div className="text-fg-dim">Legendary drops only</div>
+                <div className="ml-auto">
+                  <Toggle value={s.webhook.legendary_only} onChange={(v) => update((x) => void (x.webhook.legendary_only = v))} />
+                </div>
+              </div>
+            )}
           </div>
           {s.webhook.spawn && ocrAvailable && (
             <div className="mt-3">

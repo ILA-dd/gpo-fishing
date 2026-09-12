@@ -119,7 +119,7 @@ export default function Setup() {
                 <div className="font-mono text-fg-dim break-words select-text">
                   {ocr.text.trim() || "(nothing read)"}
                   <div className="mt-1 flex gap-1.5">
-                    {ocr.drop && <Pill tone="fruit">{ocr.drop.is_legendary ? "legendary drop" : "fruit drop"}{ocr.drop.name ? `: ${ocr.drop.name}` : ""}</Pill>}
+                    {ocr.drop && <Pill tone="fruit">{ocr.drop.is_legendary ? "legendary drop (pity 0)" : "fruit drop"}</Pill>}
                     {ocr.spawn && <Pill tone="accent">spawn: {ocr.spawn.name ?? "unknown fruit"}{ocr.spawn.location ? ` at ${ocr.spawn.location}` : ""}</Pill>}
                   </div>
                 </div>

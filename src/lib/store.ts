@@ -76,7 +76,7 @@ export const useStore = create<Store>((set, get) => ({
       on("roblox:changed", (p) => set({ roblox: p }));
       on("settings:changed", (p) => set({ settings: p }));
       on("bot:fruit_drop", (p) =>
-        set({ lastEvent: { kind: "fruit", text: `${p.is_legendary ? "Legendary " : ""}${p.name ?? "Devil fruit"} caught!`, ts: Date.now() } }),
+        set({ lastEvent: { kind: "fruit", text: p.is_legendary ? "Legendary devil fruit!" : "Devil fruit dropped!", ts: Date.now() } }),
       );
       on("bot:fruit_spawn", (p) => set({ lastEvent: { kind: "spawn", text: `${p.name ?? "A fruit"} spawned${p.location ? ` at ${p.location}` : ""}`, ts: Date.now() } }));
       on("bot:purchase", (p) => set({ lastEvent: { kind: "purchase", text: `Bought ${p.amount} bait`, ts: Date.now() } }));
