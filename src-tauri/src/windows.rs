@@ -1,4 +1,6 @@
-use tauri::{AppHandle, Emitter, LogicalSize, Manager, PhysicalPosition, PhysicalSize, WebviewWindow};
+use tauri::{
+    AppHandle, Emitter, LogicalSize, Manager, PhysicalPosition, PhysicalSize, WebviewWindow,
+};
 
 use crate::app::AppState;
 use crate::core::types::{PxPoint, PxRect, RelPoint, WindowInfo};
@@ -70,12 +72,24 @@ pub fn on_roblox_changed(app: &AppHandle, info: Option<WindowInfo>) {
             }
         }
         Some(w) if !w.visible || !w.is_foreground => {
-            hide(hud(app));
+            // Auxiliary GPO windows intentionally take focus while the user
+            // interacts with them. Do not hide the focused surface merely
+            // because Sober is no longer active; doing so creates an Xfce
+            // focus/show/hide loop.
+            let hud_is_being_used = auxiliary_window_has_focus(hud(app));
+            if !hud_is_being_used {
+                hide(hud(app));
+            }
             if overlay_visible(app) {
                 hide_overlay(app);
             }
-            hide(panel(app));
-            hide(guide(app));
+            let panel_is_being_used = auxiliary_window_has_focus(panel(app));
+            if !panel_is_being_used {
+                hide(panel(app));
+            }
+            if !auxiliary_window_has_focus(guide(app)) {
+                hide(guide(app));
+            }
         }
         Some(w) => {
             position_hud(app, w.client);
@@ -91,7 +105,10 @@ pub fn on_roblox_changed(app: &AppHandle, info: Option<WindowInfo>) {
             }
         }
     }
-    let _ = app.emit("ui:visibility", roblox_active(info).is_some() || info.is_none());
+    let _ = app.emit(
+        "ui:visibility",
+        roblox_active(info).is_some() || info.is_none(),
+    );
     emit_panel_visible(app);
 }
 
@@ -101,6 +118,18 @@ fn hide(w: Option<WebviewWindow>) {
             hide_window(&w);
         }
     }
+}
+
+#[cfg(target_os = "linux")]
+fn auxiliary_window_has_focus(window: Option<WebviewWindow>) -> bool {
+    window
+        .map(|window| window.is_focused().unwrap_or(false))
+        .unwrap_or(false)
+}
+
+#[cfg(not(target_os = "linux"))]
+fn auxiliary_window_has_focus(_window: Option<WebviewWindow>) -> bool {
+    false
 }
 
 #[cfg(windows)]
@@ -118,7 +147,17 @@ fn set_noactivate(w: &WebviewWindow) {
     }
 }
 
-#[cfg(not(windows))]
+#[cfg(target_os = "linux")]
+fn set_noactivate(w: &WebviewWindow) {
+    // Xfce activates a newly shown top-most Tauri window unless it is marked
+    // non-focusable. That made the HUD steal focus from Sober, after which the
+    // watcher hid it, returned focus to Sober and repeated the cycle. Besides
+    // visible flicker, the loop ate scroll-wheel events. The HUD is display
+    // only, so it must never become an X11 input target.
+    let _ = w.set_focusable(false);
+}
+
+#[cfg(all(not(windows), not(target_os = "linux")))]
 fn set_noactivate(_w: &WebviewWindow) {}
 
 #[cfg(windows)]
@@ -191,8 +230,19 @@ fn position_hud(app: &AppHandle, client: PxRect) {
     let margin = (MARGIN * scale) as i32;
     let x = client.x + (offset.x * client.w as f32) as i32 - w / 2;
     let y = client.y + (offset.y * client.h as f32) as i32 + margin;
-    let x = x.clamp(client.x + margin, (client.right() - w - margin).max(client.x));
-    let y = y.clamp(client.y + margin, (client.bottom() - h - margin).max(client.y));
+    let x = x.clamp(
+        client.x + margin,
+        (client.right() - w - margin).max(client.x),
+    );
+    let y = y.clamp(
+        client.y + margin,
+        (client.bottom() - h - margin).max(client.y),
+    );
+    // `show()` on Xfce may reset the focusability set at creation time.
+    // Re-assert it before the HUD is displayed so its passive status badge
+    // does not steal Sober's keyboard and scroll focus.
+    #[cfg(target_os = "linux")]
+    let _ = hud.set_focusable(false);
     let _ = hud.set_position(PhysicalPosition::new(x, y));
     if !hud.is_visible().unwrap_or(false) {
         show_noactivate(&hud);
@@ -215,8 +265,14 @@ fn position_panel(app: &AppHandle, client: PxRect) {
     let _ = panel.set_size(PhysicalSize::new(w as u32, h as u32));
     let x = client.x + (offset.x * client.w as f32) as i32 - w;
     let y = client.y + (offset.y * client.h as f32) as i32 - h / 2;
-    let x = x.clamp(client.x + margin, (client.right() - w - margin).max(client.x + margin));
-    let y = y.clamp(client.y + margin, (client.bottom() - h - margin).max(client.y + margin));
+    let x = x.clamp(
+        client.x + margin,
+        (client.right() - w - margin).max(client.x + margin),
+    );
+    let y = y.clamp(
+        client.y + margin,
+        (client.bottom() - h - margin).max(client.y + margin),
+    );
     let _ = panel.set_position(PhysicalPosition::new(x, y));
     if !panel.is_visible().unwrap_or(false) && !panel.is_minimized().unwrap_or(false) {
         show_noactivate(&panel);
@@ -241,15 +297,23 @@ fn position_guide(app: &AppHandle, client: PxRect) {
 pub fn save_panel_placement(app: &AppHandle) {
     let Some(panel) = panel(app) else { return };
     let st = app.state::<AppState>();
-    let Some(client) = st.roblox.read().map(|w| w.client) else { return };
-    let (Ok(pos), Ok(size)) = (panel.outer_position(), panel.inner_size()) else { return };
+    let Some(client) = st.roblox.read().map(|w| w.client) else {
+        return;
+    };
+    let (Ok(pos), Ok(size)) = (panel.outer_position(), panel.inner_size()) else {
+        return;
+    };
     let scale = panel.scale_factor().unwrap_or(1.0);
     let mut s = st.settings.read().clone();
     s.ui.panel_offset = RelPoint {
         x: ((pos.x + size.width as i32 - client.x) as f32 / client.w.max(1) as f32).clamp(0.0, 1.0),
-        y: ((pos.y + size.height as i32 / 2 - client.y) as f32 / client.h.max(1) as f32).clamp(0.0, 1.0),
+        y: ((pos.y + size.height as i32 / 2 - client.y) as f32 / client.h.max(1) as f32)
+            .clamp(0.0, 1.0),
     };
-    s.ui.panel_size = [(size.width as f64 / scale) as u32, (size.height as f64 / scale) as u32];
+    s.ui.panel_size = [
+        (size.width as f64 / scale) as u32,
+        (size.height as f64 / scale) as u32,
+    ];
     *st.settings.write() = s.clone();
     let _ = st.store.save(&s);
 }
@@ -263,7 +327,9 @@ pub fn set_hud_visible(app: &AppHandle, visible: bool) {
 }
 
 pub fn panel_visible(app: &AppHandle) -> bool {
-    panel(app).map(|p| p.is_visible().unwrap_or(false) && !p.is_minimized().unwrap_or(false)).unwrap_or(false)
+    panel(app)
+        .map(|p| p.is_visible().unwrap_or(false) && !p.is_minimized().unwrap_or(false))
+        .unwrap_or(false)
 }
 
 pub fn emit_panel_visible(app: &AppHandle) {
@@ -329,16 +395,21 @@ pub fn show_overlay(app: &AppHandle, roblox: PxRect, interactive: bool) -> Resul
     let st = app.state::<AppState>();
     if interactive && st.bot.is_running() {
         st.bot.pause();
-        st.resume_after_overlay.store(true, std::sync::atomic::Ordering::SeqCst);
+        st.resume_after_overlay
+            .store(true, std::sync::atomic::Ordering::SeqCst);
     }
     fit_overlay(&o, roblox);
-    o.set_ignore_cursor_events(!interactive).map_err(|e| e.to_string())?;
+    o.set_ignore_cursor_events(!interactive)
+        .map_err(|e| e.to_string())?;
     o.show().map_err(|e| e.to_string())?;
     let _ = o.set_always_on_top(true);
     if interactive {
         o.set_focus().map_err(|e| e.to_string())?;
     }
-    Ok(PxPoint { x: roblox.x, y: roblox.y })
+    Ok(PxPoint {
+        x: roblox.x,
+        y: roblox.y,
+    })
 }
 
 pub fn hide_overlay(app: &AppHandle) {
@@ -349,11 +420,16 @@ pub fn hide_overlay(app: &AppHandle) {
         let _ = o.set_ignore_cursor_events(true);
         let _ = o.hide();
     }
-    if st.resume_after_overlay.swap(false, std::sync::atomic::Ordering::SeqCst) {
+    if st
+        .resume_after_overlay
+        .swap(false, std::sync::atomic::Ordering::SeqCst)
+    {
         st.bot.start();
     }
 }
 
 pub fn overlay_visible(app: &AppHandle) -> bool {
-    overlay(app).map(|o| o.is_visible().unwrap_or(false)).unwrap_or(false)
+    overlay(app)
+        .map(|o| o.is_visible().unwrap_or(false))
+        .unwrap_or(false)
 }

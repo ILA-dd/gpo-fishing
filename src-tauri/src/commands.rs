@@ -300,7 +300,7 @@ pub async fn ocr_test(st: State<'_, AppState>) -> Result<OcrTest, String> {
     let platform = st.platform.clone();
     blocking(move || {
         if !platform.ocr.available() {
-            return Err("Windows OCR is not available on this system".into());
+            return Err("OCR is not available on this system. On Linux, install tesseract and tesseract-data-eng.".into());
         }
         let frame = platform.capture.grab(region.to_px(&roblox)).map_err(|e| e.to_string())?;
         let text = platform.ocr.read(&frame).map_err(|e| e.to_string())?;

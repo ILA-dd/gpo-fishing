@@ -55,6 +55,12 @@ features = [
   "Storage_Streams",
 ]
 
+# The Linux backend talks to an X11 server directly.  Keeping this target-scoped
+# means the existing Windows DXGI / SendInput / WinRT OCR implementation is not
+# linked or changed when building the Windows release.
+[target.'cfg(target_os = "linux")'.dependencies]
+x11rb = { version = "0.13", features = ["xtest"] }
+
 [dev-dependencies]
 
 [features]

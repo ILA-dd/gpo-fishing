@@ -2,6 +2,8 @@ use std::sync::Arc;
 
 use crate::core::types::{Frame, Key, MouseButton, PxPoint, PxRect, WindowInfo};
 
+#[cfg(target_os = "linux")]
+pub mod linux;
 pub mod mock;
 #[cfg(windows)]
 pub mod windows;
@@ -74,7 +76,18 @@ fn build_ocr() -> Arc<dyn Ocr> {
     Arc::new(mock::NoOcr)
 }
 
-#[cfg(not(windows))]
+#[cfg(target_os = "linux")]
+pub fn build() -> Platform {
+    Platform {
+        window: Arc::new(linux::window::X11Window::new("Roblox")),
+        capture: Arc::new(linux::capture::X11Capture::new()),
+        input: Arc::new(linux::input::XTestInput::new()),
+        ocr: Arc::new(linux::ocr::TesseractOcr::new()),
+    }
+}
+
+// Keep unsupported targets useful for tests and for future platform ports.
+#[cfg(not(any(windows, target_os = "linux")))]
 pub fn build() -> Platform {
     mock::platform()
 }

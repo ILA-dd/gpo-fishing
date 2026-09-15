@@ -191,4 +191,3 @@ impl Capture for DxgiCapture {
         }
     }
 }
-

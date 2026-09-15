@@ -1,5 +1,11 @@
 [![Discord](https://img.shields.io/badge/Discord-Join%20Server-7289da?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/unPZxXAtfb)
 
+# GPO Autofish — Linux/X11 Fork
+
+> **This repository is a fork of [arielldev/gpo-fishing](https://github.com/arielldev/gpo-fishing).** It preserves the v4.x interface and bot logic, keeps the Windows implementation intact, and adds a native backend for **Arch Linux running an X11 desktop session**.
+>
+> The Linux backend finds and focuses the Roblox/Sober window, captures the game area, uses Tesseract for OCR, and sends mouse/keyboard actions through X11 XTEST. It is intended for a real **X11/Xorg** login; Wayland is not supported for capture and input automation.
+
 # 🎣 GPO Autofish v4.0 - GUIDE
 
 **💬 Join our Discord server:** https://discord.gg/unPZxXAtfb
@@ -8,8 +14,8 @@
 
 **Complete Rewrite - Native, Fast & Tiny:**
 
-- ⚡ **Native Windows app** - Rewritten in Rust with Tauri. One installer under 10 MB, no Python
-- 🧠 **Built-in text recognition** - Uses the OCR that ships with Windows 10/11. No 1 GB download
+- ⚡ **Native desktop app** - Rewritten in Rust with Tauri. Windows and Linux/X11 builds, no Python
+- 🧠 **Built-in text recognition** - Windows uses its native OCR; Linux uses the system Tesseract package
 - 📌 **HUD pill + tray icon** - A small always-on-top pill sits on the Roblox window. No big window in the way
 - 📐 **Resolution independent** - Every area and click point is saved relative to the Roblox window
 - 🖱️ **On-screen editor** - Draw the bar and drop message areas directly over the game. Bar area can be auto-detected
@@ -46,12 +52,13 @@ The original closed-source macro is sketchy and often flagged by antivirus softw
 - **💾 Presets** - Save and load full settings snapshots
 - **⬆️ Auto Update** - Updates itself from GitHub Releases
 - **⌨️ Global hotkey support** (F1/F2/F3/F4, all rebindable)
+- 🐧 **Linux/X11 backend** - Native Roblox discovery, screen capture, XTEST mouse/keyboard input and Tesseract OCR
 
 ## 🚀 Key Features
 
 ### 🍎 Devil Fruit Detection
 
-- **OCR Detection**: Detects devil fruit drops using Windows text recognition
+- **OCR Detection**: Detects devil fruit drops using the platform OCR backend (Windows OCR or Tesseract on Linux)
 - **Spawn Detection**: Detects when devil fruits spawn in the world (all 33 GPO fruits)
 - **Fuzzy Matching**: Handles OCR errors with a similarity threshold
 - **Auto Storage**: Automatically stores caught fruits into two hotbar slots and re-equips the rod
@@ -85,11 +92,59 @@ The original closed-source macro is sketchy and often flagged by antivirus softw
 
 Requires Windows 10 1809 or newer. Windows OCR needs an English language pack, which is present on nearly every install. The Setup page tells you if it is missing.
 
+### 🐧 Arch Linux — X11 (supported Linux target)
+
+The Linux port targets a real **X11 session** and keeps the same UI, saved settings, overlay editor and bot logic as v4.x. It uses X11/EWMH to locate and focus Roblox, X11 `GetImage` for capture, XTEST for mouse/keyboard input, and `tesseract` for OCR.
+
+Wayland is intentionally not supported for the macro backend: its permission model does not allow an ordinary application to globally capture another application's pixels or inject input. Log into an **Xorg / X11** desktop session before launching the app. Xwayland inside a Wayland session is not a substitute when Roblox itself is a native Wayland window.
+
+Install the required Arch packages:
+
+```bash
+sudo pacman -Syu --needed base-devel git nodejs npm rustup \
+  webkit2gtk-4.1 gtk3 librsvg libayatana-appindicator \
+  tesseract tesseract-data-eng xorg-xdpyinfo
+rustup default stable
+```
+
+Clone and start the development build:
+
+```bash
+git clone https://github.com/ILA-dd/gpo-fishing.git
+cd gpo-fishing
+npm install
+npm run tauri dev
+```
+
+Create an optimized package:
+
+```bash
+npm run tauri build
+```
+
+The unbundled Linux executable is written to `src-tauri/target/release/gpo-autofish`; Tauri bundles are written below `src-tauri/target/release/bundle/`. The default configuration requests all bundles, so Arch users can run the AppImage or package the release binary in an Arch package. The build itself does not need Wine.
+
+Before reporting a Linux capture/input problem, confirm that the session and required services are visible:
+
+```bash
+printf 'session: %s\n' "$XDG_SESSION_TYPE"
+xdpyinfo -queryExtensions | grep XTEST
+tesseract --list-langs | grep '^eng$'
+```
+
+`session: x11`, an `XTEST` line, and `eng` are expected. If Tesseract is installed outside `PATH`, launch the app with `GPO_TESSERACT=/absolute/path/to/tesseract npm run tauri dev`.
+
+You can also run the non-destructive backend smoke check before opening Roblox. It verifies XTEST, X11 root capture, and the English Tesseract language without emitting any mouse or keyboard input:
+
+```bash
+cargo test --manifest-path src-tauri/Cargo.toml x11_backend_smoke -- --ignored
+```
+
 ### 🔧 Build the installer yourself
 
 Requirements: [Node.js 20+](https://nodejs.org) and [Rust](https://rustup.rs). WebView2 is already on Windows 11.
 
-1. **Download the repository** as ZIP and extract it, or `git clone https://github.com/arielldev/gpo-fishing.git`
+1. **Download the repository** as ZIP and extract it, or `git clone https://github.com/ILA-dd/gpo-fishing.git`
 2. **Double-click `MakeItExe.bat`** - It installs packages, builds the app and opens the folder with the installer
 3. **Run the installer** it produced, same as the one from Releases
 
@@ -163,7 +218,7 @@ Auto-update checks GitHub Releases on launch and can be turned off in Settings.
 - **HUD not showing**: It only appears while Roblox is running and not minimized. Press F4 if you hid it
 - **Hotkeys not working**: Another app may own the key. Rebind in Settings › Hotkeys
 - **Fish detection failing**: Open Setup › Fishing bar area. If the match score is low, raise Settings › Color tolerance or redraw the area tighter around the bar
-- **Devil fruit not detected**: Setup › Drop message area › Read now shows exactly what the OCR sees
+- **Devil fruit not detected**: Setup › Drop message area › Read now shows exactly what the OCR sees. On Linux, confirm `tesseract-data-eng` is installed
 - **Fruit spawns not detected**: Ensure the drop message area covers the spawn popup
 - **Auto-purchase failing**: Verify the Confirm and Quantity points are set and you are standing next to the bait barrel
 - **Logs**: Settings › Data folder › `logs/`
@@ -181,7 +236,7 @@ Auto-update checks GitHub Releases on launch and can be turned off in Settings.
 
 ```
 src-tauri/src/
-├── core/platform/       # OS traits (window, capture, input, OCR) + Windows implementations
+├── core/platform/       # OS traits plus isolated windows/ and linux/ backends
 ├── core/vision.rs       # Bar / fish / marker detection
 ├── core/fruit.rs        # Drop and spawn text matching
 ├── core/controller.rs   # Reel controller

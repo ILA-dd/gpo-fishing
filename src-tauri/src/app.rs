@@ -30,7 +30,9 @@ pub struct AppState {
 }
 
 pub fn data_dir() -> PathBuf {
-    dirs::config_dir().unwrap_or_else(std::env::temp_dir).join("gpo-autofish")
+    dirs::config_dir()
+        .unwrap_or_else(std::env::temp_dir)
+        .join("gpo-autofish")
 }
 
 pub fn build_state() -> AppState {
@@ -44,7 +46,14 @@ pub fn build_state() -> AppState {
     let roblox = Arc::new(RwLock::new(platform.window.find()));
     let webhook = WebhookQueue::start(Arc::clone(&settings));
     let (tx, rx) = unbounded::<BotEvent>();
-    let bot = Bot::new(platform.clone(), Arc::clone(&settings), Arc::clone(&roblox), tx.clone(), Arc::clone(&webhook), Arc::clone(&store));
+    let bot = Bot::new(
+        platform.clone(),
+        Arc::clone(&settings),
+        Arc::clone(&roblox),
+        tx.clone(),
+        Arc::clone(&webhook),
+        Arc::clone(&store),
+    );
 
     AppState {
         platform,
@@ -65,7 +74,11 @@ pub fn setup(app: &AppHandle, st: &AppState) -> Result<(), Box<dyn std::error::E
     if let Some(rx) = st.events_rx.lock().take() {
         spawn_event_forwarder(app.clone(), rx);
     }
-    spawn_roblox_watcher(st.platform.clone(), Arc::clone(&st.roblox), st.events_tx.clone());
+    spawn_roblox_watcher(
+        st.platform.clone(),
+        Arc::clone(&st.roblox),
+        st.events_tx.clone(),
+    );
     spawn_panel_fallback(app.clone());
 
     tray::build(app)?;
@@ -122,7 +135,11 @@ fn spawn_panel_fallback(app: AppHandle) {
         .expect("spawn panel fallback");
 }
 
-fn spawn_roblox_watcher(platform: Platform, roblox: Arc<RwLock<Option<WindowInfo>>>, tx: Sender<BotEvent>) {
+fn spawn_roblox_watcher(
+    platform: Platform,
+    roblox: Arc<RwLock<Option<WindowInfo>>>,
+    tx: Sender<BotEvent>,
+) {
     std::thread::Builder::new()
         .name("roblox-watcher".into())
         .spawn(move || {
@@ -146,7 +163,18 @@ fn spawn_roblox_watcher(platform: Platform, roblox: Arc<RwLock<Option<WindowInfo
                     let _ = tx.send(BotEvent::Roblox(now));
                     last = now;
                 }
-                std::thread::sleep(Duration::from_millis(if now.is_some() { 50 } else { 500 }));
+                // A game window does not move at frame rate. Polling every
+                // 50 ms on X11 caused needless synchronous round trips and
+                // made the auxiliary Tauri windows visibly jitter on Xfce.
+                #[cfg(target_os = "linux")]
+                let active_poll = 150;
+                #[cfg(not(target_os = "linux"))]
+                let active_poll = 50;
+                std::thread::sleep(Duration::from_millis(if now.is_some() {
+                    active_poll
+                } else {
+                    500
+                }));
             }
         })
         .expect("spawn roblox watcher");
