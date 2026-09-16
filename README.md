@@ -180,7 +180,7 @@ Auto-update checks GitHub Releases on launch and can be turned off in Settings.
 2. **Enable Auto buy bait** in the Features page and follow the numbered steps
 3. **Shop key**: The bot holds it until the barrel's shop dialog opens
 4. **Confirm / Quantity / Cancel**: Pick each button in the shop. Cancel is optional
-5. **Amount and interval**: How much bait to type and how many fish between purchases
+5. **Amount and interval**: How much bait to type and how many casts between purchases
 
 ### Discord Webhook Setup
 

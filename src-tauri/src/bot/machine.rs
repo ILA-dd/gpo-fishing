@@ -41,12 +41,24 @@ pub fn run(ctx: &Ctx, skip_setup: bool) {
         if !ensure_front(ctx) {
             return;
         }
+        // Bait is consumed on every cast, including a missed bite. Buy before
+        // the next cast so a run cannot strand itself with zero bait while it
+        // waits for enough *successful* catches to reach the old threshold.
+        let buy_due = {
+            let s = ctx.settings.read();
+            s.features.auto_purchase
+                && ctx.session.lock().since_purchase >= s.purchase.every_n_catches.max(1)
+        };
+        if buy_due && !actions::purchase(ctx) {
+            return;
+        }
         if ctx.settings.read().features.auto_bait && !actions::select_bait(ctx) {
             return;
         }
         if !actions::cast(ctx) {
             return;
         }
+        ctx.session.lock().record_cast();
         if !ctx.sleep_ms(400) {
             return;
         }
@@ -439,17 +451,14 @@ fn post_catch(ctx: &Ctx, first_text: &str) -> bool {
         }
     }
 
-    let (fish, since_wh, since_buy) = {
+    let (fish, since_wh) = {
         let sess = ctx.session.lock();
-        (sess.fish, sess.since_progress_webhook, sess.since_purchase)
+        (sess.fish, sess.since_progress_webhook)
     };
     if s.webhook.progress && since_wh >= s.webhook.progress_every_n.max(1) {
         ctx.session.lock().since_progress_webhook = 0;
         ctx.webhook.progress(ctx.session.lock().stats());
         let _ = fish;
-    }
-    if s.features.auto_purchase && since_buy >= s.purchase.every_n_catches.max(1) && !actions::purchase(ctx) {
-        return false;
     }
     true
 }

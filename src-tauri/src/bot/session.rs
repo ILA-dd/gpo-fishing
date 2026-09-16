@@ -74,8 +74,13 @@ impl Session {
         if caught {
             self.fish += 1;
             self.since_progress_webhook += 1;
-            self.since_purchase += 1;
         }
+    }
+
+    /// Counts a cast once it has been sent to Roblox. Bait is consumed by a
+    /// cast, not by a verified catch, so this must stay separate from `record`.
+    pub fn record_cast(&mut self) {
+        self.since_purchase += 1;
     }
 
     pub fn record_failed(&mut self) {
@@ -155,5 +160,14 @@ mod tests {
             s.record(false);
         }
         assert!((s.adaptive_timeout(10.0) - 7.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn purchase_interval_counts_casts_not_catches() {
+        let mut s = Session::new();
+        s.record(false);
+        s.record_cast();
+        s.record_cast();
+        assert_eq!(s.since_purchase, 2);
     }
 }

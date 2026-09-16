@@ -70,7 +70,7 @@ export default function Features() {
         </Row>
         <Row
           title="Auto buy bait"
-          sub="Stand next to the bait barrel on the dock. Runs once at start and again every N catches."
+          sub="Stand next to the bait barrel on the dock. Runs once at start and again every N casts."
           right={
             <>
               {s.features.auto_purchase && !shopReady && <Pill tone="warn">points needed</Pill>}
@@ -99,7 +99,7 @@ export default function Features() {
           </Steps>
           <div className="mt-4 pt-3 border-t border-line">
             <Field label="Buy every">
-              <Stepper value={s.purchase.every_n_catches} min={1} max={500} suffix="fish" onChange={(v) => update((x) => void (x.purchase.every_n_catches = v))} />
+              <Stepper value={s.purchase.every_n_catches} min={1} max={500} suffix="casts" onChange={(v) => update((x) => void (x.purchase.every_n_catches = v))} />
             </Field>
             <Field label="Pause between clicks">
               <Slider value={s.purchase.click_delay_ms} min={200} max={3000} step={50} format={(v) => `${v} ms`} onChange={(v) => update((x) => void (x.purchase.click_delay_ms = v))} />
