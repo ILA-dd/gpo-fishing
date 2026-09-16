@@ -134,14 +134,30 @@ impl Ctx {
     }
 
     pub fn ensure_roblox_focus(&self) -> bool {
-        if !self.roblox_in_front() {
-            return false;
+        if self.roblox_in_front() {
+            return true;
         }
+
+        // The panel/HUD often owns focus when the user presses Start. In that
+        // case, request focus for Roblox instead of treating the background
+        // state as a permanent failure. Refresh locally as well as waiting for
+        // the watcher so the first cast is not needlessly delayed on X11.
         if !self.platform.window.focus() {
             return false;
         }
-        let _ = self.sleep_ms(100);
-        true
+        for _ in 0..5 {
+            if !self.sleep_ms(50) {
+                return false;
+            }
+            if let Some(info) = self.platform.window.find() {
+                let focused = info.visible && info.is_foreground;
+                *self.roblox.write() = Some(info);
+                if focused {
+                    return true;
+                }
+            }
+        }
+        false
     }
 
     pub fn settings(&self) -> Settings {
